@@ -1,0 +1,6 @@
+{
+    "orgUrl": "https://{org}.crm.dynamics.com/",
+    "tenantId": "",
+    "clientId": "",
+    "clientSecret": ""
+}
