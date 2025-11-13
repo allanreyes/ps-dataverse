@@ -13,12 +13,6 @@ Connect-AzAccount -ServicePrincipal -Credential $connectCreds -Tenant $config.te
 $token = (Get-AzAccessToken -ResourceUrl $config.orgUrl -AsSecureString).Token `
          | ConvertFrom-SecureString -AsPlainText
 
-
-# Or connect using user credentials
-# Connect-AzAccount -Tenant $config.tenantId
-# $token = (Get-AzAccessToken -ResourceUrl $config.orgUrl -AsSecureString).Token `
-#          | ConvertFrom-SecureString -AsPlainText
-
 $headers = @{
     'Authorization'    = "Bearer $token"
     'Accept'           = 'application/json'
@@ -27,9 +21,21 @@ $headers = @{
     'Content-Type'     = 'application/json; charset=utf-8'
 }
 
-Invoke-RestMethod -Uri "$($config.orgUrl)api/data/v9.2/WhoAmI" -Headers $headers | fl
+Invoke-RestMethod -Uri "$($config.orgUrl)/api/data/v9.2/WhoAmI" -Headers $headers | fl
 
-$result = Invoke-RestMethod -Uri "$($config.orgUrl)api/data/v9.2/accounts?`$top=5" -Headers $headers 
+# =========================
+# CREATE TEST PROJECT
+# =========================
+$testBody = @{
+    dfo_name = "Test Project - $(Get-Date -Format 'yyyyMMdd-HHmmss')"
+} | ConvertTo-Json
 
-$result.value| Select-Object -Property incidentid, title, statecode, statuscode, createdon, modifiedon | 
-Export-Csv -Path ".\output\accounts.csv" -NoTypeInformation -Encoding UTF8 -Force -UseQuotes AsNeeded
+# Use the **plural entity set name**
+$createUri = "$($config.orgUrl)/api/data/v9.2/dfo_projects"
+
+try {
+    $response = Invoke-RestMethod -Method Post -Uri $createUri -Headers $headers -Body $testBody
+    Write-Host "Test project created successfully! ID: $($response.projectid)"
+} catch {
+    Write-Host "Error creating test project: $($_.Exception.Message)"
+}
